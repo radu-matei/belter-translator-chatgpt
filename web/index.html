@@ -6,8 +6,7 @@
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
   <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
-  <link rel="stylesheet"
-    href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/dark.min.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/dark.min.css">
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
@@ -21,7 +20,8 @@
   <div class="translator-container">
     <h1>English to Belter Translator</h1>
     <form>
-      <textarea id="input-text" style="overflow:none;resize:none" rows="10" cols="30" placeholder="Translate from English to the Belter language from The Expanse!"></textarea>
+      <textarea id="input-text" style="overflow:none;resize:none" rows="10" cols="30"
+        placeholder="Translate from English to the Belter language from The Expanse!"></textarea>
       <div class="button-container">
         <button type="button" id="translate-button">Translate to Belter</button>
         <button type="button" id="randomize-button">I feel lucky!</button>
@@ -36,69 +36,72 @@
 
   <section class="documentation" style="display: none;">
 
-<h3 id="using-openai-apis-from-spin-applications">Using OpenAI APIs from Spin applications</h3>
-<p>This is a sample application for calling <a href="https://platform.openai.com/docs/introduction">OpenAI APIs</a> from a serverless application built with Spin and TypeScript.</p>
-<p>The application needs access to Spin&#39;s new key/value store feature, and needs to make outbound HTTP calls to the OpenAI API.</p>
-<p>Here is the configuration section for the API:</p>
-<pre><code class="lang-toml"><span class="hljs-section">[[component]]</span>
-<span class="hljs-attr">id</span> = <span class="hljs-string">"api"</span>
-<span class="hljs-attr">source</span> = <span class="hljs-string">"api/target/spin-http-js.wasm"</span>
-<span class="hljs-attr">allowed_http_hosts</span> = [<span class="hljs-string">"https://api.openai.com"</span>]
-<span class="hljs-attr">key_value_stores</span> = [<span class="hljs-string">"default"</span>]
-<span class="hljs-section">[component.trigger]</span>
-<span class="hljs-attr">route</span> = <span class="hljs-string">"/api/..."</span>
-<span class="hljs-section">[component.build]</span>
-<span class="hljs-attr">command</span> = <span class="hljs-string">"npm run build"</span>
-<span class="hljs-attr">workdir</span> = <span class="hljs-string">"api"</span>
-</code></pre>
-<p>Then, we can use the new router from the <a href="https://developer.fermyon.com/spin/javascript-components">TypeScript SDK for Spin</a> and send the prompt to ChatGPT, then store the result:</p>
-<pre><code class="lang-javascript">router.post(<span class="hljs-string">"/api/translate"</span>, <span class="hljs-keyword">async</span> (_req, extra) =&gt; {
-  <span class="hljs-keyword">try</span> {
-    <span class="hljs-comment">// Get the OpenAI key from the default KV store.</span>
-    <span class="hljs-keyword">let</span> kv = spinSdk.kv.openDefault();
-    <span class="hljs-keyword">let</span> configuration = <span class="hljs-keyword">new</span> Configuration({
-      <span class="hljs-attr">apiKey</span>: decoder.decode(kv.get(<span class="hljs-string">"openai_key"</span>)),
+    <h1>Building a Belter translator with Spin and ChatGPT</h1>
+    <p>This is a simple example of a <a href="https://github.com/fermyon/spin">Spin</a> application calling to <a
+        href="https://openai.com/blog/openai-api">OpenAI&#39;s ChatGPT API</a> to perform translation into the language
+      spoken by Belters from <a
+        href="https://www.amazon.com/Books-Expanse/s?rh=n%3A283155%2Cp_lbr_books_series_browse-bin%3AThe+Expanse">The
+        Expanse books, written by James S.A. Corey</a>.</p>
+    <h3 id="how-does-this-work-">How does this work?</h3>
+    <p>This is a <a href="https://github.com/fermyon/spin">Spin</a> application made up of two components:</p>
+    <ul>
+      <li>a front-end component, with a simple web page</li>
+      <li>an API written in TypeScript</li>
+    </ul>
+    <p>The API reads the OpenAI key from the <a href="https://developer.fermyon.com/spin/kv-store">default Spin
+        key/value store</a>, then intializes the client and sends the request. It stores the result, then returns it to
+      the user to display it:</p>
+    <pre><code class="lang-typescript">router.post(<span class="hljs-string">"/api/translate"</span>, <span class="hljs-keyword">async</span> (_req, extra) =&gt; {
+      <span class="hljs-keyword">try</span> {
+        <span class="hljs-comment">// Get the OpenAI key from the default KV store.</span>
+        <span class="hljs-keyword">let</span> kv = spinSdk.kv.openDefault();
+        <span class="hljs-keyword">let</span> configuration = <span class="hljs-keyword">new</span> Configuration({
+          <span class="hljs-attr">apiKey</span>: decoder.decode(kv.get(<span class="hljs-string">"openai_key"</span>)),
+        });
+    
+        <span class="hljs-comment">// Create a new instance of the OpenAI client.</span>
+        <span class="hljs-keyword">let</span> openai = <span class="hljs-keyword">new</span> OpenAIApi(configuration);
+    
+        <span class="hljs-comment">// Read the conversation ID and message from the request body.</span>
+        <span class="hljs-keyword">let</span> p = <span class="hljs-built_in">JSON</span>.parse(decoder.decode(extra.body)) <span class="hljs-keyword">as</span> Prompt;
+    
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`Message: <span class="hljs-subst">${p.message}</span>`</span>);
+    
+        <span class="hljs-comment">// Initialize ChatGPT with a system prompt, then add the user input. </span>
+        <span class="hljs-keyword">const</span> completion = <span class="hljs-keyword">await</span> openai.createChatCompletion({
+          <span class="hljs-attr">model</span>: <span class="hljs-string">"gpt-3.5-turbo"</span>,
+          <span class="hljs-attr">messages</span>: [
+            { <span class="hljs-string">"role"</span>: <span class="hljs-string">"system"</span>, <span class="hljs-string">"content"</span>: <span class="hljs-string">"You are a helpful assistant that translates the input to the languages spoken by Belters from the Expanse universe, by James S.A. Corey."</span> },
+            { <span class="hljs-string">"role"</span>: <span class="hljs-string">"user"</span>, <span class="hljs-string">"content"</span>: <span class="hljs-string">`Translate the following to the Belter language: <span class="hljs-subst">${p.message}</span>`</span> },
+          ],
+        });
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(completion));
+    
+        <span class="hljs-keyword">let</span> text = completion.data.choices[<span class="hljs-number">0</span>]!.message!.content! || <span class="hljs-string">"I guess the AI just gave up..."</span>;
+        p.translation = text;
+    
+        <span class="hljs-comment">// Attempt to write the conversation to the KV store, but return the result to the user in case writing failed.</span>
+        <span class="hljs-keyword">try</span> {
+          kv.set(p.id, <span class="hljs-built_in">JSON</span>.stringify(p));
+        } <span class="hljs-keyword">catch</span> (err) {
+          <span class="hljs-built_in">console</span>.error(<span class="hljs-string">`Cannot write translation to KV store: <span class="hljs-subst">${err}</span>`</span>);
+        }
+    
+        <span class="hljs-comment">// Return the latest response to the user.</span>
+        <span class="hljs-keyword">return</span> { <span class="hljs-attr">status</span>: <span class="hljs-number">200</span>, <span class="hljs-attr">body</span>: encoder.encode(text).buffer };
+      } <span class="hljs-keyword">catch</span> (err) {
+        <span class="hljs-built_in">console</span>.log(err);
+        <span class="hljs-keyword">return</span> error()
+      }
     });
+    </code></pre>
+    <h3 id="building-and-running">Building and running</h3>
+    <p>Running it on your own requires to first obtain an OpenAI key, then set it in the default Spin key/value store
+      using the KV explorer - access <code>/internal/kv-explorer</code>, then set the <code>openai_key</code> key with
+      the API key.</p>
 
-    <span class="hljs-comment">// Create a new instance of the OpenAI client.</span>
-    <span class="hljs-keyword">let</span> openai = <span class="hljs-keyword">new</span> OpenAIApi(configuration);
-
-    <span class="hljs-comment">// Read the conversation ID and message from the request body.</span>
-    <span class="hljs-keyword">let</span> p = <span class="hljs-built_in">JSON</span>.parse(decoder.decode(extra.body)) <span class="hljs-keyword">as</span> Prompt;
-
-    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`Message: <span class="hljs-subst">${p.message}</span>`</span>);
-
-    <span class="hljs-comment">// Initialize ChatGPT with a system prompt, then add the user input. </span>
-    <span class="hljs-keyword">const</span> completion = <span class="hljs-keyword">await</span> openai.createChatCompletion({
-      <span class="hljs-attr">model</span>: <span class="hljs-string">"gpt-3.5-turbo"</span>,
-      <span class="hljs-attr">messages</span>: [
-        { <span class="hljs-string">"role"</span>: <span class="hljs-string">"system"</span>, <span class="hljs-string">"content"</span>: <span class="hljs-string">"You are a helpful assistant that translates the input to the languages spoken by Belters from the Expanse universe, by James S.A. Corey. Please refrain from adding any additional notes and completions, only translate the user input."</span> },
-        { <span class="hljs-string">"role"</span>: <span class="hljs-string">"user"</span>, <span class="hljs-string">"content"</span>: <span class="hljs-string">`Translate the following to the Belter language: <span class="hljs-subst">${p.message}</span>`</span> },
-      ],
-    });
-    <span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(completion));
-
-    <span class="hljs-keyword">let</span> text = completion.data.choices[<span class="hljs-number">0</span>]!.message!.content! || <span class="hljs-string">"I guess the AI just gave up..."</span>;
-    p.translation = text;
-
-    <span class="hljs-comment">// Attempt to write the conversation to the KV store, but return the result to the user in case writing failed.</span>
-    <span class="hljs-keyword">try</span> {
-      kv.set(p.id, <span class="hljs-built_in">JSON</span>.stringify(p));
-    } <span class="hljs-keyword">catch</span> (err) {
-      <span class="hljs-built_in">console</span>.error(<span class="hljs-string">`Cannot write translation to KV store: <span class="hljs-subst">${err}</span>`</span>);
-    }
-
-    <span class="hljs-comment">// Return the latest response to the user.</span>
-    <span class="hljs-keyword">return</span> { <span class="hljs-attr">status</span>: <span class="hljs-number">200</span>, <span class="hljs-attr">body</span>: encoder.encode(text).buffer };
-  } <span class="hljs-keyword">catch</span> (err) {
-    <span class="hljs-built_in">console</span>.log(err);
-    <span class="hljs-keyword">return</span> error()
-  }
-});
-</code></pre>
-
-
-    <p>To learn more, check out <a href="https://github.com/radu-matei/belter-translator-chatgpt">the GitHub repository</a>.</p>
+    <p>To learn more, check out <a href="https://github.com/radu-matei/belter-translator-chatgpt">the GitHub
+        repository</a>.</p>
 
   </section>
 

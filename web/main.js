@@ -7,19 +7,6 @@ let conversationId = uuidv4();
 
 translationResult.style.display = 'none';
 
-// // Add click event listener to the button
-// translateButton.addEventListener('click', async () => {
-//
-// 	console.log(inputText.value);
-// 	let response = await fetch("/api/translate", { method: "POST", body: JSON.stringify({ id: conversationId, message: inputText.value }) });
-// 	const msg = await response.text();
-// 	translationResult.style.display = 'block';
-//
-// 	translationResult.innerText = msg.replace(/^\s+|\s+$/g, '');
-// });
-//
-
-
 // Add click event listener to the button
 translateButton.addEventListener('click', async () => {
 
@@ -92,7 +79,7 @@ function addRandomYodaQuote() {
 const toggleDocsButton = document.getElementById('toggle-docs');
 const docsSection = document.querySelector('.documentation');
 
-toggleDocsButton.addEventListener('click', function() {
+toggleDocsButton.addEventListener('click', function () {
 	if (docsSection.style.display === "none") {
 		docsSection.style.display = "block";
 	} else {
